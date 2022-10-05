@@ -44,11 +44,25 @@ if(UNIX)
 endif()
 set_target_properties(arithchk PROPERTIES COMPILE_DEFINITIONS 
   "NO_FPINIT;NO_LONG_LONG")
-ADD_CUSTOM_COMMAND(
-   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/arith.h
-   COMMAND arithchk > ${CMAKE_CURRENT_BINARY_DIR}/arith.h
-   DEPENDS arithchk
-   )
+if(CMAKE_CROSSCOMPILING)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+    FILE(COPY ${CMAKE_SOURCE_DIR}/arith-${ANDROID_ABI}.h DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    FILE(RENAME ${CMAKE_CURRENT_BINARY_DIR}/arith-${ANDROID_ABI}.h ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
+    FILE(COPY ${CMAKE_SOURCE_DIR}/fpu_control-${ANDROID_ABI}.h DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    FILE(RENAME ${CMAKE_CURRENT_BINARY_DIR}/fpu_control-${ANDROID_ABI}.h ${CMAKE_CURRENT_BINARY_DIR}/fpu_control.h)
+  else()
+    FILE(COPY ${CMAKE_SOURCE_DIR}/arith-arm64-v8a.h DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    FILE(RENAME ${CMAKE_CURRENT_BINARY_DIR}/arith-arm64-v8a.h ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
+    FILE(COPY ${CMAKE_SOURCE_DIR}/fpu_control-arm64-v8a.h DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    FILE(RENAME ${CMAKE_CURRENT_BINARY_DIR}/fpu_control-arm64-v8a.h ${CMAKE_CURRENT_BINARY_DIR}/fpu_control.h)
+  endif()
+else()
+  ADD_CUSTOM_COMMAND(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/arith.h
+      COMMAND arithchk > ${CMAKE_CURRENT_BINARY_DIR}/arith.h
+      DEPENDS arithchk
+  )
+endif()
 
 
 set(OFILES  ${MISC} ${POW} ${CX} ${DCX} ${REAL} ${DBL} ${INT} 
@@ -59,5 +73,5 @@ endif()
 include_directories(${CLAPACK_SOURCE_DIR}/F2CLIBS/libf2c)
 include_directories(${CLAPACK_BINARY_DIR}/F2CLIBS/libf2c)
 add_library(f2c ${OFILES} ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
-set_property(TARGET f2c PROPERTY PREFIX lib)
+#set_property(TARGET f2c PROPERTY PREFIX lib)
 install_library(f2c)
